@@ -1,3 +1,3 @@
-#Biblioteka python do automatycznej anotacji danych video
-# Cele projektu:
+# Biblioteka python do automatycznej anotacji danych video
+//Cele projektu:
 #
