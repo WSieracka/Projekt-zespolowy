@@ -1,27 +1,31 @@
 import sys
-import os
-
 import yaml
+
 
 sys.path.append("yolov3")
 
+
 from detector import *
 import yolov3.train as yolov3train
-import yolov3.train as yolov3test
+import yolov3.test as yolov3test
 from yolov3.utils.torch_utils import select_device
 
 
 class UltralyticsYolov3(Detector):
-    def __init__(self, dir_path: str, proj_dir: str = None, detector_opt_path: str = None):
-        super().__init__(dir_path, proj_dir, detector_opt_path)
-        self.default_train_options = None
-        self.default_test_options = None
-        self.default_train_options()
-        self.default_test_options()
+
+    def __init__(self, dir_path: str, proj_dir: str = None):
+        super().__init__(dir_path, proj_dir)
+        self.train_options = None
+        self.test_options = None
+        self.set_default_train_options()
+        self.set_default_test_options()
+        if proj_dir is not None:
+            self.train_options.save_dir = proj_dir
+        if proj_dir is not None:
+            self.test_options.save_dir = proj_dir
 
     def train(self):
-        self.set_default_train_options()
-        opt = self.default_train_options
+        opt = self.train_options
         if opt.device == "":
             device = select_device(opt.device, batch_size=opt.batch_size)
         else:
@@ -31,8 +35,23 @@ class UltralyticsYolov3(Detector):
         yolov3train.train(hyp=hyp, opt=opt, device=device)
 
     def test(self):
-        self.default_test_options()
-        pass
+        opt = self.test_options
+        yolov3test.test(
+                        data=opt.data,
+                        weights=opt.weights,
+                        batch_size=opt.batch_size,
+                        imgsz=opt.imgsz,
+                        conf_thres=opt.conf_thres,
+                        iou_thres=opt.iou_thres,
+                        save_json=opt.save_json,
+                        single_cls=opt.single_cls,
+                        augment=opt.augment,
+                        verbose=opt.verbose,
+                        save_txt=opt.save_txt,
+                        save_hybrid=opt.save_hybrid,
+                        save_conf=opt.save_conf,
+            opt=opt
+        )
 
     def set_default_train_options(self):
         opt_dict = {
@@ -60,8 +79,8 @@ class UltralyticsYolov3(Detector):
             "log_imgs": 16,
             "log_artifacts": False,
             "workers": 8,
-            "project": "runs/train",
-            "name": "exp",
+            "project": "",
+            "name": "",
             "exist-ok": False,
             "quad": False,
 
@@ -80,14 +99,19 @@ class UltralyticsYolov3(Detector):
         attr_opt = AttrOpt()
         for key in opt_dict.keys():
             setattr(attr_opt, key, opt_dict[key])
-        self.default_train_options = attr_opt
+        self.train_options = attr_opt
 
     def set_default_test_options(self):
         opt_dict = {
             "weights": None,
+            "data": "data/coco128.yaml",
+            "device": "",
+            "project": "",
+            "name": "",
+            "exist_ok": False,
             "batch_size": 32,
             "imgsz": 640,
-            "conf_thres": 0.001,
+            "conf_thres": 0.29,
             "iou_thres": 0.6,
             "save_json": False,
             "single_cls": False,
@@ -95,11 +119,11 @@ class UltralyticsYolov3(Detector):
             "verbose": False,
             "model": None,
             "dataloader": None,
-            "save_dir": "",
+            "save_dir": "test_save_dir",
             "save_txt": True,
-            "save_hybrid": True,
+            "save_hybrid": False,
             "save_conf": True,
-            "plots": True,
+            "plots": False,
             "log_imgs": 0
         }
 
@@ -108,9 +132,9 @@ class UltralyticsYolov3(Detector):
         attr_opt = AttrOpt()
         for key in opt_dict.keys():
             setattr(attr_opt, key, opt_dict[key])
-        self.default_test_options = attr_opt
+        self.test_options = attr_opt
 
 
 if __name__ == "__main__":
     u = UltralyticsYolov3(dir_path="yolov3/")
-    u.train()
+    u.test()
