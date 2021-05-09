@@ -5,19 +5,41 @@ import requests
 
 class Dataset:
     def __init__(self, whole_dataset='./dataset', train_dataset='./train', train_annot = './train_annotations.json', val_dataset='./val', val_annot = './val_annotations.json', *classes):
+        # Path to whole dataset
         self.whole_dataset = whole_dataset
+
+        # Path to train dataset
         self.train_dataset = train_dataset
+
+        # Path to train annotations
         self.train_annot = train_annot
+
+        # Path to validation dataset
         self.val_dataset = val_dataset
+
+        # Path to validation annotations
         self.val_annot = val_annot
-        names = []
+
+        # List of all categories
+        self.names = []
         for i in classes:
-            names.append(i)
-        self.number_classes = len(names)
+            self.names.append(i)
+        # Number of categories
+        self.number_classes = len(self.names)
+
+        # List of id of images that should be annotated by human
         self.images_annotate = []
+
+        # List of ids of categories
         self.names_Ids = []
+
+        # List of ids of images of categories
         self.class_images_Ids = []
         self.images = []
+
+        # Id of last trained and annotated image
+        self.last_train_id = 0
+        self.last_annotate_id = 0
 
     def annotate(self):
         command = "cd " + str(self.whole_dataset)
@@ -32,8 +54,8 @@ class Dataset:
             for i in self.names:
                 cat_Id = coco.getCatId(cat_name=[str(i)])
                 self.names_Ids.append(cat_Id)
-                self.class_images_Ids.append(cooc.getImgId(cat_Id=cat_Id))
-                self.images.append(coco.loadImgs(imgIds))
+                self.class_images_Ids.append(coco.getImgId(cat_Id=cat_Id))
+                self.images.append(coco.loadImgs(self.class_images_Ids))
         else:
             print("Please give annotations path")
 
