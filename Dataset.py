@@ -2,9 +2,14 @@ import os
 from pycocotools.coco import COCO
 import requests
 
+"""
+Class to keep variables about dataset
+"""
+
 
 class Dataset:
-    def __init__(self, whole_dataset='./dataset', train_dataset='./train', train_annot = './train_annotations.json', val_dataset='./val', val_annot = './val_annotations.json', *classes):
+    def __init__(self, whole_dataset='./dataset', train_dataset='./train', train_annot='./train_annotations.json',
+                 val_dataset='./val', val_annot='./val_annotations.json', *classes):
         # Path to whole dataset
         self.whole_dataset = whole_dataset
 
@@ -41,6 +46,7 @@ class Dataset:
         self.last_train_id = 0
         self.last_annotate_id = 0
 
+    # Function that uses labelme to annotate images in list
     def annotate(self):
         command = "cd " + str(self.whole_dataset)
         os.system(command)
@@ -48,6 +54,7 @@ class Dataset:
             command = "labelme " + str(i)
             os.system(command)
 
+    # Function that select only images that are in categories which were chosen
     def select_class_images(self, annotations_path):
         if annotations_path:
             coco = COCO(str(annotations_path))
@@ -59,37 +66,34 @@ class Dataset:
         else:
             print("Please give annotations path")
 
-    def filter_by_category(self, new_annot_path):
-        # Filter images:
-        json_parent = os.path.split(new_annot_path)[0]
-        os.makedirs(json_parent, exist_ok=True)
-        imgs_ids = [x['id'] for x in self.images]  # get img_ids of imgs with the category
-        new_imgs = [x for x in self.coco.dataset['images'] if x['id'] in imgs_ids]
-        catIds = self.class_images_Ids
+    # Function to find images with categories that were chosen
+    def get_images(self):
+        class_images_Ids = self.coco.getCatIds(catNms=[self.categories])
+        print("category_ids: ", class_images_Ids)
+        images_ids = self.coco.getImgIds(catIds=class_images_Ids)
+        images = self.coco.loadImgs(images_ids)
+        self.class_images_Ids = class_images_Ids
+        return images
+
+    # Function that filters json file to only images with categories that were chosen
+    def filter_category(self, new_json_path):
+        json_oryginal = os.path.split(new_json_path)[0]
+        os.makedirs(json_oryginal, exist_ok=True)
+        images_ids = [i['id'] for i in self.images]
+        new_images = [i for i in self.coco.dataset['images'] if i['id'] in images_ids]
+        category_ids = self.category_ids
         # Filter annotations
-        new_annots = [x for x in self.coco.dataset['annotations'] if x['category_id'] in catIds]
+        new_annotations = [i for i in self.coco.dataset['annotations'] if i['category_id'] in category_ids]
         # Reorganize the ids
-        new_imgs, annotations = self.modify_ids(new_imgs, new_annots)
+        new_images, annotations = self.sequence_ids(new_images, new_annotations)
         # Filter categories
-        new_categories = [x for x in self.coco.dataset['categories'] if x['id'] in catIds]
-        print("new_categories: ", new_categories)
+        new_categories = [i for i in self.coco.dataset['categories'] if i['id'] in category_ids]
         data = {
             "info": self.coco.dataset['info'],
             "licenses": self.coco.dataset['licenses'],
-            "images": new_imgs,
-            "annotations": new_annots,
+            "images": new_images,
+            "annotations": new_annotations,
             "categories": new_categories
         }
-        with open(new_annot_path, 'w') as f:
+        with open(new_json_path, 'w') as f:
             json.dump(data, f)
-
-    def modify_ids(self, images, annotations):
-        old_new_imgs_ids = {}
-        for n, im in enumerate(images):
-            old_new_imgs_ids[images[n]['id']] = n + 1
-            images[n]['id'] = n + 1
-        for n, ann in enumerate(annotations):
-            annotations[n]['id'] = n + 1
-            old_image_id = annotations[n]['image_id']
-            annotations[n]['image_id'] = old_new_imgs_ids[old_image_id]
-        return images, annotations
