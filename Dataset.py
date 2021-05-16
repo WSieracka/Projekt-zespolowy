@@ -1,4 +1,5 @@
 import os
+from os import getcwd
 from pycocotools.coco import COCO
 import requests
 
@@ -53,6 +54,21 @@ class Dataset:
         for i in self.images_annotate:
             command = "labelme " + str(i)
             os.system(command)
+
+    def select_images_annotate(self):
+        nr_experiment = "exp7"
+        current_path = getcwd()
+        for i in self.images:
+            path = current_path+"/runs/train/"+nr_experiment+"/labels/"+str(i)+".txt"
+            file = open(path, 'r')
+            content = file.readlines()
+            for line in content:
+                nums = [float(i) for i in line.split(" ")]
+                # 6th number is confidence
+                if int(nums[5]) < 0.1:
+                    self.images_annotate.append(nums[5])
+                    break
+            file.close()
 
     # Function that select only images that are in categories which were chosen
     def select_class_images(self, annotations_path):
