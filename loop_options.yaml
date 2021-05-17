@@ -1,0 +1,13 @@
+detector_name: "ultralytics_yolo"
+detector_path: "yolov3/"
+train_epochs: 100
+train_batch: 8
+test_batch: 8
+proj_dir: "proj/"
+dataset_dir: ""
+dataset_label_format: ""
+dataset_info_yaml: ""
+detection_only_labels: True
+train_only_weights: True
+mute_stdout: True
+pretrained_weights_for_first_iteration: ""
