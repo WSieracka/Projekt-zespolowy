@@ -1,7 +1,9 @@
 import os
+import shutil
 from os import getcwd
 from pycocotools.coco import COCO
 import requests
+from PIL import Image
 
 """
 Class to keep variables about dataset
@@ -49,14 +51,6 @@ class Dataset:
         self.last_train_id = 0
         self.last_annotate_id = 0
 
-    # Function that uses labelme to annotate images in list
-    def annotate(self):
-        command = "cd " + str(self.whole_dataset)
-        os.system(command)
-        for i in self.images_annotate:
-            command = "labelme " + str(i)
-            os.system(command)
-
     def classes_txt(self):
         f = open("labels.txt", "w")
         for i in self.names:
@@ -68,7 +62,7 @@ class Dataset:
         # current_path = getcwd()
         for i in self.images:
             # path = current_path+"/runs/train/"+nr_experiment+"/labels/"+str(i)+".txt"
-            path = current_path+str(i)+".txt"
+            path = current_path + str(i) + ".txt"
             file = open(path, 'r')
             content = file.readlines()
             for line in content:
@@ -78,6 +72,90 @@ class Dataset:
                     self.images_annotate.append(i)
                     break
             file.close()
+
+    # Function that uses labelme to annotate images in list
+    def annotate(self, target_dir='/home/weronika/Pulpit/coco128/images/dataset/'):
+        self.classes_txt()
+        image = []
+        if os.path.isdir(target_dir):
+            for i in os.listdir(target_dir):
+                os.remove(os.path.join(target_dir, i))
+        else:
+            os.system("cd ~/Pulpit/coco128/images/ ; mkdir dataset")
+
+        for i in self.images_annotate:
+            image.append(
+                '/home/weronika/Pulpit/coco128/images/train2017/{images_annotate}.jpg'.format(images_annotate=i))
+
+        for i in image:
+            shutil.copy(i, target_dir)
+
+        os.system("cd /home/weronika/Pulpit/coco128/images/ ; labelme dataset/ --labels labels.txt --autosave")
+
+        for i in self.images_annotate:
+            image.append(
+                target_dir + '{images_annotate}.jpg'.format(images_annotate=i))
+
+        for i in image:
+            shutil.copy(i, self.train_dataset)
+
+    # Function to convert box to yolo format
+    def convert(width, height, box):
+        d_width = 1. / width
+        d_height = 1. / height
+        x = (box[0] + box[1]) / 2.0
+        y = (box[2] + box[3]) / 2.0
+        new_width = box[1] - box[0]
+        new_height = box[3] - box[2]
+        x = x * d_width
+        new_width = new_width * d_width
+        y = y * d_height
+        new_height = new_height * d_height
+        return x, y, new_width, new_height
+
+    def convert_json_to_txt(self, dataset_path="./dataset/", output_path="./output/", old_json_path="./old_json/"):
+        current_path = getcwd()
+        # Take list of jsons to convert
+        json_list = []
+        for file in os.listdir(dataset_path):
+            if file.endswith(".json"):
+                json_list.append(file)
+
+        # Converts json to yolo format
+        for json_name in json_list:
+            yolo_name = json_name.rstrip(".json") + ".txt"
+            result_path = dataset_path + json_name
+            result_file = open(result_path, "r")
+
+            yolo_path = output_path + yolo_name
+            yolo_file = open(yolo_path, "a")
+
+            lines = result_file.read().split('\n')
+            for i, line in enumerate(lines):
+                if "lineColor" in line:
+                    break
+                if "label" in line:
+                    x1 = float(lines[i + 5].rstrip(','))
+                    y1 = float(lines[i + 6])
+                    x2 = float(lines[i + 9].rstrip(','))
+                    y2 = float(lines[i + 10])
+                    cls = line[16:17]
+
+                    x_min = min(x1, x2)
+                    x_max = max(x1, x2)
+                    y_min = min(y1, y2)
+                    y_max = max(y1, y2)
+                    image_path = str('%s/dataset/%s.jpg' % (current_path, os.path.splitext(json_name)[0]))
+
+                    image = Image.open(image_path)
+                    width = int(image.size[0])
+                    height = int(image.size[1])
+
+                    box = (x_min, x_max, y_min, y_max)
+                    bounding_box = convert(width, height, box)
+                    yolo_file.write(cls + " " + " ".join([str(x) for x in bounding_box]) + '\n')
+
+            os.rename(result_path, old_json_path + json_name)
 
     # Function that select only images that are in categories which were chosen
     def select_class_images(self, annotations_path):
