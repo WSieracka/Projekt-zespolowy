@@ -1,4 +1,5 @@
 import os
+from os import getcwd
 from pycocotools.coco import COCO
 import requests
 
@@ -40,6 +41,8 @@ class Dataset:
 
         # List of ids of images of categories
         self.class_images_Ids = []
+
+        # List of ids of all dataset images
         self.images = []
 
         # Id of last trained and annotated image
@@ -53,6 +56,28 @@ class Dataset:
         for i in self.images_annotate:
             command = "labelme " + str(i)
             os.system(command)
+
+    def classes_txt(self):
+        f = open("labels.txt", "w")
+        for i in self.names:
+            f.write('%s\n' % i)
+        f.close()
+
+    def select_images_annotate(self, current_path, conf_threshold=0.1):
+        # nr_experiment = "exp7"
+        # current_path = getcwd()
+        for i in self.images:
+            # path = current_path+"/runs/train/"+nr_experiment+"/labels/"+str(i)+".txt"
+            path = current_path+str(i)+".txt"
+            file = open(path, 'r')
+            content = file.readlines()
+            for line in content:
+                nums = [float(j) for j in line.split(" ")]
+                # 6th number is confidence
+                if float(nums[5]) < conf_threshold:
+                    self.images_annotate.append(i)
+                    break
+            file.close()
 
     # Function that select only images that are in categories which were chosen
     def select_class_images(self, annotations_path):
