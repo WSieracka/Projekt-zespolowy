@@ -1,4 +1,7 @@
+import os
+
 import yaml
+import subprocess
 
 from loop_utils.loop_state import *
 from detector_handle import DetectorHandle
@@ -8,7 +11,7 @@ from Dataset import *
 class LoopSteps:
     @staticmethod
     def finish_iteration(options: dict, dataset: Dataset, current_state: LoopState):
-        current_state.current_iteration += 1
+        current_state.current_iteration = current_state.current_iteration + 1
         LoopSteps.save_state(options, dataset, current_state)
 
     @staticmethod
@@ -26,10 +29,12 @@ class LoopSteps:
         if os.path.exists(os.path.abspath(f"{options['proj_dir']}/save.yaml")):
             with open(os.path.abspath(f"{options['proj_dir']}/save.yaml"), mode="r") as f:
                 state_dict = yaml.load(f, yaml.SafeLoader)
-                current_state.iteration=state_dict["iteration"]
-                current_state.task=state_dict["last_task"]
-                dataset.last_train_id = state_dict["last_train_id"]
-                dataset.last_annotate_id = state_dict["last_annotate_id"]
+                loaded_state = LoopState(state_dict["last_task"], state_dict["iteration"])
+                loaded_dataset = Dataset(dataset.whole_dataset, dataset.train_dataset, dataset.train_annot,
+                                         dataset.val_dataset, dataset.val_annot, *dataset.names)
+                loaded_dataset.last_train_id = state_dict["last_train_id"]
+                loaded_dataset.last_annotate_id = state_dict["last_annotate_id"]
+                return loaded_dataset, loaded_state
 
     @staticmethod
     def choose_initial_training_samples(options: dict, dataset: Dataset, current_state: LoopState):
@@ -113,3 +118,14 @@ class LoopSteps:
             dataset.images.append(name)
         dataset.select_images_annotate(os.path.abspath(f"{options['proj_dir']}/detection/{current_state.current_iteration}/"),
                                        conf_threshold=options["conf_sample_thres"])
+        labelme_temp_dir = os.path.abspath(f"{options['proj_dir']}/labelme_temp")
+        if os.path.exists(labelme_temp_dir):
+            shutil.rmtree(labelme_temp_dir)
+        os.makedirs(labelme_temp_dir)
+        owd = os.getcwd()
+        os.chdir(options["proj_dir"])
+        dataset.classes_txt()
+        os.chdir(owd)
+        for image in dataset.images_annotate:
+            shutil.copy(os.path.abspath(f"{options['train_dataset_dir']}/{image}.jpg"), os.path.abspath(labelme_temp_dir))
+            subprocess.call(["labelme", os.path.abspath(labelme_temp_dir), "--autosave", "--labels", f"{os.path.abspath(options['proj_dir'])}/labels.txt"])

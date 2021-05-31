@@ -21,7 +21,8 @@ if __name__ == "__main__":
                       os.path.abspath(cfg["val_labels"]),
                       *cfg["dataset_classes_names"])
     current_state = LoopState(task=args.step, iteration=0)
-    LoopSteps.read_save_if_possible(cfg, dataset, current_state)
+    if LoopSteps.read_save_if_possible(cfg, dataset, current_state) is not None:
+        dataset, current_state = LoopSteps.read_save_if_possible(cfg, dataset, current_state)
     if args.step == "training":
         if current_state.current_iteration == 0:
             LoopSteps.choose_initial_training_samples(cfg, dataset, current_state)
