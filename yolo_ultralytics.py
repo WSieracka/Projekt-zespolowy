@@ -18,15 +18,18 @@ class YoloUltralytics:
 
     @staticmethod
     def create_dataset_info_yaml(dataset: Dataset, options: dict, current_state: LoopState) -> str:
-        file_contents = [{"train", f"{dataset.train_dataset}"},
-                         {"nc", f"{len(dataset.names)}"}, {"names", dataset.names}]
+        file_contents = dict()
+        file_contents.update({"train": dataset.train_dataset})
         if current_state.current_task == "detection" or current_state.current_task == "training":
-            file_contents.insert(__object={"val:",  f"{dataset.train_dataset}"}, __index=1)
+            file_contents.update({"val": dataset.train_dataset})
         else:
-            file_contents.insert(__object={"val:", f"{dataset.val_dataset}"}, __index=1)
-        filename = f"{options.get('proj_dir')}/temp_dataset_info"
+            file_contents.update({"val": options["temp_val_dataset_dir"]})
+        file_contents.update({"nc": len(dataset.names)})
+        file_contents.update({"names": dataset.names})
+        filename = f"{options.get('proj_dir')}/temp_dataset_info.yaml"
+        os.makedirs(f"{options.get('proj_dir')}", exist_ok=True)
         with open(filename, mode="w+") as f:
-            yaml.dump(file_contents, f, yaml.Dumper)
+            yaml.safe_dump(file_contents, f, sort_keys=False)
         return os.path.abspath(filename)
 
     @staticmethod

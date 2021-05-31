@@ -62,7 +62,7 @@ class Dataset:
         # current_path = getcwd()
         for i in self.images:
             # path = current_path+"/runs/train/"+nr_experiment+"/labels/"+str(i)+".txt"
-            path = current_path + str(i) + ".txt"
+            path = current_path + "/" + str(i) + ".txt"
             file = open(path, 'r')
             content = file.readlines()
             for line in content:

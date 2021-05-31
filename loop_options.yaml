@@ -6,10 +6,12 @@ test_batch: 4
 proj_dir: "proj/"
 whole_dataset_dir: "coco128/labels/train2017"
 whole_dataset_images_dir: "coco128/images/train2017"
-train_dataset_dir: "working_dataset/images/train/"
+train_dataset_dir: "working_dataset/images/train/" # will be created if doesnt exist
 val_dataset_dir: "coco128/images/train2017"
-train_labels: "working_dataset/labels/train/"
+train_labels: "working_dataset/labels/train/" # will be created if doesnt exist
 val_labels: "coco128/labels/train2017"
+temp_val_labels: "working_dataset/labels/temp_val/" # will be created if doesnt exist
+temp_val_dataset_dir: "working_dataset/images/temp_val/" # will be created if doesnt exist
 dataset_classes_names: [ 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
          'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
          'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
@@ -25,6 +27,6 @@ mute_stdout: True
 pretrained_weights_for_init: ""
 overwrite: True
 conf_ignore_thres: 0.2
-conf_sample_thres: 0.5
+conf_sample_thres: 0.4
 validation_samples_amount: 10
 training_size_incrementation: 0.2
