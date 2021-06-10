@@ -40,6 +40,5 @@ if __name__ == "__main__":
         LoopSteps.select_samples(cfg, dataset, current_state)
     elif args.step == "finish_iteration":
         LoopSteps.finish_iteration(cfg, dataset, current_state)
-        pass
     else:
         pass

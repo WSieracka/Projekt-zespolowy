@@ -46,6 +46,10 @@ class LoopSteps:
         all_images = os.listdir(dataset.whole_dataset)
         ids = [id.strip(".txt") for id in all_images]
         num_images = int(options["training_size_incrementation"]*len(ids))
+
+        if num_images > len(ids):
+            num_images = len(ids)
+
         dataset.last_train_id = num_images - 1
         for file in os.listdir(os.path.abspath(dataset.whole_dataset))[0:num_images]:
             shutil.copy(os.path.abspath(f"{dataset.whole_dataset}/{file}"), os.path.abspath(dataset.train_annot))
@@ -63,11 +67,15 @@ class LoopSteps:
         all_images = os.listdir(dataset.whole_dataset)
         ids = [id.strip(".txt") for id in all_images]
         num_images = int(options["training_size_incrementation"]*len(ids))
+
+        if dataset.last_train_id + num_images > len(ids):
+            num_images = len(ids) - dataset.last_train_id
+
         dataset.last_train_id = num_images - 1
-        for file in os.listdir(os.path.abspath(dataset.whole_dataset))[dataset.last_train_id:num_images]:
+        for file in os.listdir(os.path.abspath(dataset.whole_dataset))[dataset.last_train_id:dataset.last_train_id + num_images]:
             shutil.copy(os.path.abspath(f"{dataset.whole_dataset}/{file}"), os.path.abspath(dataset.train_annot))
         whole_dataset_images = options["whole_dataset_images_dir"]
-        for file in os.listdir(os.path.abspath(whole_dataset_images))[dataset.last_train_id:num_images]:
+        for file in os.listdir(os.path.abspath(whole_dataset_images))[dataset.last_train_id:dataset.last_train_id + num_images]:
             shutil.copy(os.path.abspath(f"{whole_dataset_images}/{file}"), os.path.abspath(dataset.train_dataset))
 
     @staticmethod
@@ -128,4 +136,5 @@ class LoopSteps:
         os.chdir(owd)
         for image in dataset.images_annotate:
             shutil.copy(os.path.abspath(f"{options['train_dataset_dir']}/{image}.jpg"), os.path.abspath(labelme_temp_dir))
-            subprocess.call(["labelme", os.path.abspath(labelme_temp_dir), "--autosave", "--labels", f"{os.path.abspath(options['proj_dir'])}/labels.txt"])
+        subprocess.call(["labelme", os.path.abspath(labelme_temp_dir), "--autosave", "--labels", f"{os.path.abspath(options['proj_dir'])}/labels.txt"])
+        # dataset.convert_json_to_txt(dataset_path=f"{options['proj_dir']}/labelme_temp/", output_path=f"{options['proj_dir']}/labelme_temp/", old_json_path=f"{options['proj_dir']}/labelme_temp/")
